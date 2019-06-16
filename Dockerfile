@@ -7,7 +7,7 @@ FROM centos:7
 USER root
 
 ## ROOT and Boost dependencies
-RUN sudo yum -y upgrade && \
+RUN yum -y upgrade && yum -y install sudo wget make bzip2 git && \
     sudo yum install -y avahi-compat-libdns_sd-devel binutils \
     	cfitsio-devel fftw-devel graphviz-devel \
         ftgl-devel gcc gcc-c++ gcc-gfortran gsl-static libldap-dev \
@@ -23,8 +23,7 @@ RUN wget --quiet https://cmake.org/files/v3.12/cmake-3.12.0-rc3.tar.gz -O /tmp/c
 	rm -r /tmp/cmake.tar.gz /tmp/cmake-3.12.0-rc3 
 
 ## Build Boost 1.70 (this version required by scdmsPyTools, not packaged in centos 7)
-RUN source scl_source enable rh-python36 && \
-	wget --quiet https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz -O ~/boost.tar.gz && \
+RUN wget --quiet https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz -O ~/boost.tar.gz && \
 	tar -zxf ~/boost.tar.gz --directory=$HOME && \
 	cd ~/boost_1_70_0/ && \
 	./bootstrap.sh && \
@@ -34,17 +33,6 @@ RUN source scl_source enable rh-python36 && \
 RUN wget --quiet https://repo.anaconda.com/archive/Anaconda3-2019.03-Linux-x86_64.sh -O /packages/anaconda.sh && \
     /bin/bash /packages/anaconda.sh -b -p /packages/anaconda3 && \
     rm /packages/anaconda.sh
-COPY scripts/rootenv.sh /packages/root6.12/bin/ 
-RUN . /packages/anaconda3/etc/profile.d/conda.sh && \
-	conda activate base && \ 
-	. /packages/root6.12/bin/rootenv.sh && \
-	conda install jupyter jupyterlab metakernel \
-	        h5py iminuit tensorflow pydot keras \
-	        dask[complete] \
-	        xlrd xlwt openpyxl && \
-	pip install --upgrade pip setuptools && \
-	pip --no-cache-dir install memory-profiler tables \
-		zmq root_pandas awkward awkward-numba uproot root_numpy
 
 ## Build ROOT 6.16
 RUN . /packages/anaconda3/etc/profile.d/conda.sh && conda activate base && \
@@ -62,14 +50,12 @@ RUN . /packages/anaconda3/etc/profile.d/conda.sh && conda activate base && \
 	-Dpython3=ON \
 	-Dpython=ON \
 	-DPYTHON_EXECUTABLE:PATH=/packages/anaconda3/bin/python \
-	-DPYTHON_INCLUDE_DIR:PATH=/packages/anaconda3/include/python3.6m \
-	-DPYTHON_LIBRARY:PATH=/packages/anaconda3/lib \
 	..  
 RUN . /packages/anaconda3/etc/profile.d/conda.sh && conda activate base && \
     source $HOME/root-6.16.00/rootbuild/bin/thisroot.sh && \
 	cd $HOME/root-6.16.00/rootbuild && \
-	cmake --build . --target install -- -j4
-RUN rm -r ~/rootsource.tar.gz ~/root-6.16.00
+	cmake --build . --target install -- -j4 && \
+	rm -r ~/rootsource.tar.gz ~/root-6.16.00
 
 ## Create softlink for boost shared objects (for compatibility) 
 RUN ln -s /packages/boost1.70/lib/libboost_numpy36.so /packages/boost1.70/lib/libboost_numpy.so && \
@@ -79,8 +65,8 @@ RUN ln -s /packages/boost1.70/lib/libboost_numpy36.so /packages/boost1.70/lib/li
 
 ## Install additional system packages
 RUN sudo yum install -y \
-	centos-release-scl git patch net-tools binutils \
-	gcc libcurl-devel libX11-devel \
+	centos-release-scl patch net-tools binutils \
+	gcc libcurl-devel libX11-devel shadow-utils \
 	blas-devel libarchive-devel fuse-sshfs jq graphviz dvipng \
 	libXext-devel bazel http-parser nodejs perl-Digest-MD5 perl-ExtUtils-MakeMaker gettext \
 	# LaTeX tools
@@ -93,15 +79,23 @@ RUN sudo yum install -y \
 	fish tree ack screen tmux vim-enhanced neovim nano pico emacs emacs-nox \  
 	&& sudo yum clean all
 
-## Install additional Python packages
-RUN source /packages/root6.16/bin/thisroot.sh && \
-	pip install --upgrade pip setuptools && \
-	pip --no-cache-dir install \
-		jupyter jupyterlab metakernel \
-		memory-profiler \
-		root_numpy root_pandas uproot \
-		h5py tables \
-		iminuit tensorflow pydot keras \
-		awkward awkward-numba zmq \
-		dask[complete] \
-		xlrd xlwt openpyxl
+RUN . /packages/anaconda3/etc/profile.d/conda.sh &&  conda activate base && \
+	. /packages/root6.16/bin/thisroot.sh && \
+       conda install jupyter jupyterlab metakernel \
+                h5py iminuit tensorflow pydot keras \
+                dask[complete] \
+                xlrd xlwt openpyxl && \
+        pip install --upgrade pip setuptools && \
+        pip --no-cache-dir install memory-profiler tables \
+                zmq root_pandas awkward awkward-numba uproot root_numpy
+
+COPY analysis-tools /packages/analysis-tools
+
+## Configure user and entrypoint
+
+RUN groupadd --gid 101 sudo
+RUN useradd -ms /bin/bash -g root -G sudo -u 1000 jotunn
+RUN echo ". /packages/anaconda3/etc/profile.d/conda.sh && conda activate base" >> /home/jotunn/.bashrc
+#ENTRYPOINT ["/bin/bash"]
+USER jotunn
+WORKDIR /home/jotunn
