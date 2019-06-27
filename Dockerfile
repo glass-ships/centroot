@@ -94,8 +94,9 @@ COPY analysis-tools /packages/analysis-tools
 ## Configure user and entrypoint
 
 RUN groupadd --gid 101 sudo
-RUN useradd -ms /bin/bash -g root -G sudo -u 1000 jotunn
+RUN useradd -ms /bin/bash -g root -G sudo,wheels -u 1000 jotunn
 RUN echo ". /packages/anaconda3/etc/profile.d/conda.sh && conda activate base" >> /home/jotunn/.bashrc
+RUN echo 'jotunn:heim' | chpasswd
 #ENTRYPOINT ["/bin/bash"]
 USER jotunn
 WORKDIR /home/jotunn
