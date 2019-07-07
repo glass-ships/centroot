@@ -1,6 +1,6 @@
 # CentROOT
 
-A CentOS 7 Docker image with Cern ROOT 6.14 and its dependencies built in. Includes Anaconda3.
+A CentOS 7 Docker image including installations of Cern ROOT 6.14 and Anaconda 3.
 
 This image can be used as a base environment into which you can install analysis packages that depend on ROOT. 
 
