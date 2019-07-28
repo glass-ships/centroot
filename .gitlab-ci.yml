@@ -1,5 +1,8 @@
 image: ubuntu:latest
 
+before_script:
+    - apt install -y git
+
 test_variable:
   stage: test
   script:
