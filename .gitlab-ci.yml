@@ -1,4 +1,4 @@
-image: detlab/centroot:0.1
+image: ubuntu:latest
 
 test_variable:
   stage: test
