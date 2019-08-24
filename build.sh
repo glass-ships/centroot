@@ -12,7 +12,7 @@ fi
 cd $DIR
 docker build \
     --rm \
-    -t detlab/centroot:0.1 \
+    -t glasslabs/centroot:0.2 \
     -f Dockerfile .
 
 unset DIR
