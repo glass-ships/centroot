@@ -14,7 +14,7 @@ docker build \
     --rm \
     --build-arg UID=$(id -u) \
     --build-arg GID=$(id -g) \
-    -t detlab/centroot:0.1 \
+    -t glasslabs/centroot:0.2 \
     -f Dockerfile .
 
 unset DIR
