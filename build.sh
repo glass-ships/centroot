@@ -12,6 +12,8 @@ fi
 cd $DIR
 docker build \
     --rm \
+    --build-arg UID=$(id -u) \
+    --build-arg GID=$(id -g) \
     -t detlab/centroot:0.1 \
     -f Dockerfile .
 
