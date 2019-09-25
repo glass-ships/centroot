@@ -101,11 +101,13 @@ RUN . /packages/anaconda3/etc/profile.d/conda.sh && \
 
 ## Include some custom python analysis tools
 COPY analysis-tools /packages/analysis-tools
+COPY bash-env $HOME/bash-env
 
 ## Configure user and entrypoint ###
 RUN groupadd --gid 101 sudo
 RUN useradd -ms /bin/bash -g root -G sudo,wheel -u 1000 loki
 RUN echo 'loki:letmein' | chpasswd
+RUN echo ". $HOME/bash-env/main" >> /home/loki/.bashrc
 RUN echo ". /packages/anaconda3/etc/profile.d/conda.sh && conda activate base" >> /home/loki/.bashrc
 RUN echo ". $ROOTSYS/bin/thisroot.sh" >> /home/loki/.bashrc
 USER loki
