@@ -96,8 +96,10 @@ RUN . /packages/anaconda3/etc/profile.d/conda.sh && \
 	        xlrd xlwt openpyxl && \
 	conda install -c conda-forge fish && \
 	pip install --upgrade pip setuptools && \
-	pip --no-cache-dir install memory-profiler tables \
-		zmq root_pandas awkward awkward-numba uproot root_numpy
+	pip --no-cache-dir install \
+        memory-profiler papermill \
+        tables zmq \
+        root_pandas awkward awkward-numba uproot root_numpy
 
 ## Include some custom python analysis tools
 COPY analysis-tools /packages/analysis-tools
