@@ -104,7 +104,8 @@ RUN . /packages/anaconda3/etc/profile.d/conda.sh && \
 ## Include some custom python analysis tools
 COPY analysis-tools /packages/analysis-tools
 
-## Configure user and entrypoint ###
+## Configure user, env, and entrypoint ###
+RUN mkdir /data && chmod -R a+rwx /data 
 RUN groupadd --gid 101 sudo
 RUN useradd -ms /bin/bash -g root -G sudo,wheel -u 1000 loki
 RUN echo 'loki:letmein' | chpasswd
