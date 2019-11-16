@@ -10,7 +10,7 @@ USER root
 ENV CMAKEVER=3.15.2
 ENV BOOSTVER=1.70.0
 ENV BOOST_PATH=/packages/boost1.70
-ENV ROOTVER=6.18.00
+ENV ROOTVER=6.18.04
 ENV ROOTSYS=/packages/root6.18
 
 RUN mkdir /packages
@@ -103,12 +103,15 @@ RUN . /packages/anaconda3/etc/profile.d/conda.sh && \
 
 ## Include some custom python analysis tools
 COPY analysis-tools /packages/analysis-tools
+COPY bash-env $HOME/bash-env
 
 ## Configure user, env, and entrypoint ###
 RUN mkdir /data && chmod -R a+rwx /data 
 RUN groupadd --gid 101 sudo
 RUN useradd -ms /bin/bash -g root -G sudo,wheel -u 1000 loki
 RUN echo 'loki:letmein' | chpasswd
+RUN chown -R loki /home/loki
+RUN echo ". $HOME/bash-env/main" >> /home/loki/.bashrc
 RUN echo ". /packages/anaconda3/etc/profile.d/conda.sh && conda activate base" >> /home/loki/.bashrc
 RUN echo ". $ROOTSYS/bin/thisroot.sh" >> /home/loki/.bashrc
 USER loki
