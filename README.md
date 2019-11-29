@@ -4,7 +4,7 @@ A pre-built CentOS / Cern ROOT / Anconda 3 environment for scientific analysis.
 
 This image can be used as a base environment into which you can install analysis packages that depend on ROOT. 
 
-You can also build in an installation of JupyterLab and set it up to run through your local host. 
+JupyterLab is also built in, and you can set it up to run through your local host. 
 (This is black magic to me though, I recommend looking into [this repository](https://github.com/slaclab/slac-jupyterhub) as an example)
 
 # Usage
@@ -13,13 +13,13 @@ The image is built and pushed to Docker Hub regularly. I avoid using the `latest
 `glasslabs/centroot:X.Y` where X.Y is the version number. 
 
 You can use the image itself as is:  
-`$ docker run -v $HOME/.ssh:"/home/loki/.ssh" -p 8091:8091 -it glasslabs/centroot:X.Y`
+`$ docker run -v $HOME/.ssh:"/home/loki/.ssh" -p 8080:8080 -it glasslabs/centroot:X.Y`
 
 Or you can use it as a base image for your own Docker image:
 ```
 FROM glasslabs/centroot:X.Y
 
-# The rest of your Dockerfile
+<The rest of your Dockerfile>
 ```
 
 # Contribution 

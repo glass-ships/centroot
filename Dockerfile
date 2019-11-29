@@ -8,16 +8,14 @@ USER root
 
 ## Environment variables for installation
 ENV CMAKEVER=3.15.2
-ENV BOOSTVER=1.70.0
-ENV BOOST_PATH=/packages/boost1.70
+ENV BOOSTVER=1.71.0
+ENV BOOST_PATH=/opt/boost1.71
 ENV ROOTVER=6.18.04
-ENV ROOTSYS=/packages/root6.18
-
-RUN mkdir /packages
+ENV ROOTSYS=/opt/root6.18
 
 ## Install system level packages
 RUN yum -y upgrade && yum install -y \ 
-        wget make git which centos-release-scl patch net-tools binutils \
+        sudo wget make git which centos-release-scl patch net-tools binutils \
         gcc gcc-c++ g++  libcurl-devel libX11-devel \
         blas-devel libarchive-devel fuse-sshfs jq graphviz dvipng \
         libXext-devel bazel http-parser nodejs perl-Digest-MD5 perl-ExtUtils-MakeMaker gettext \
@@ -32,13 +30,13 @@ RUN yum -y upgrade && yum install -y \
         && yum clean all
 
 ## Anaconda 3
-RUN wget --quiet https://repo.anaconda.com/archive/Anaconda3-2019.07-Linux-x86_64.sh -O /packages/anaconda.sh && \
-    bash /packages/anaconda.sh -b -p /packages/anaconda3 && \
-    rm /packages/anaconda.sh
-RUN ln -s /packages/anaconda3/include/python3.7m /packages/anaconda3/include/python3.7
+RUN wget --quiet https://repo.anaconda.com/archive/Anaconda3-2019.07-Linux-x86_64.sh -O /opt/anaconda.sh && \
+    bash /opt/anaconda.sh -b -p /opt/anaconda3 && \
+    rm /opt/anaconda.sh
+RUN ln -s /opt/anaconda3/include/python3.7m /opt/anaconda3/include/python3.7
 
 ## Boost libraries
-RUN . /packages/anaconda3/etc/profile.d/conda.sh && conda activate base && \
+RUN . /opt/anaconda3/etc/profile.d/conda.sh && conda activate base && \
 wget --quiet https://dl.bintray.com/boostorg/release/$BOOSTVER/source/boost_$(echo $BOOSTVER|tr . _).tar.gz -O /tmp/boost.tar.gz && \
         tar -zxf /tmp/boost.tar.gz --directory=/tmp && \
         cd /tmp/boost_$(echo $BOOSTVER|tr . _)/ && \
@@ -47,8 +45,8 @@ wget --quiet https://dl.bintray.com/boostorg/release/$BOOSTVER/source/boost_$(ec
         rm -r /tmp/boost*
 
 # Create softlink for boost shared objects (for compatibility)
-RUN ln -s $BOOST_PATH/lib/libboost_numpy36.so $BOOST_PATH/lib/libboost_numpy.so && \
-        ln -s $BOOST_PATH/lib/libboost_python36.so $BOOST_PATH/lib/libboost_python.so
+RUN ln -s $BOOST_PATH/lib/libboost_numpy37.so $BOOST_PATH/lib/libboost_numpy.so && \
+        ln -s $BOOST_PATH/lib/libboost_python37.so $BOOST_PATH/lib/libboost_python.so
 
 ## Cern ROOT 
 # ROOT Dependencies 
@@ -79,7 +77,7 @@ RUN mkdir -p /tmp/root-$ROOTVER/rootbuild && cd /tmp/root-$ROOTVER/rootbuild && 
 	-DCMAKE_INSTALL_PREFIX:PATH=$ROOTSYS \
 	-Dpython3=ON \
 	-Dpython=ON \
-	-DPYTHON_EXECUTABLE:PATH=/packages/anaconda3/bin/python \
+	-DPYTHON_EXECUTABLE:PATH=/opt/anaconda3/bin/python \
 	..  
 RUN source /tmp/root-$ROOTVER/rootbuild/bin/thisroot.sh && \
 	cd /tmp/root-$ROOTVER/rootbuild && \
@@ -87,32 +85,39 @@ RUN source /tmp/root-$ROOTVER/rootbuild/bin/thisroot.sh && \
 RUN rm -r /tmp/rootsource.tar.gz /tmp/root-$ROOTVER
 
 ## Install some Anaconda packages
-RUN . /packages/anaconda3/etc/profile.d/conda.sh && \
+RUN . $ROOTSYS/bin/thisroot.sh && \
+  . /opt/anaconda3/etc/profile.d/conda.sh && \
 	conda activate base && \ 
-	. $ROOTSYS/bin/thisroot.sh && \
 	conda install jupyter jupyterlab metakernel \
 	        h5py iminuit tensorflow pydot keras \
 	        dask[complete] \
 	        xlrd xlwt openpyxl && \
-	conda install -c conda-forge fish && \
+	#conda install -c conda-forge fish root && \
 	pip install --upgrade pip setuptools && \
 	pip --no-cache-dir install \
         memory-profiler papermill \
         tables zmq \
         root_pandas awkward awkward-numba uproot root_numpy
 
-## Include some custom python analysis tools
-COPY analysis-tools /packages/analysis-tools
-COPY bash-env $HOME/bash-env
+### Copy in custom code, repos, data, etc.
+COPY repos/ /opt/
+COPY scripts /opt/scripts
+COPY data/pyCAP_reference_data data/pyTools_reference_data /data/
 
-## Configure user, env, and entrypoint ###
-RUN mkdir /data && chmod -R a+rwx /data 
+### Configure user, env, and entrypoint ###
 RUN groupadd --gid 101 sudo
-RUN useradd -ms /bin/bash -g root -G sudo,wheel -u 1000 loki
-RUN echo 'loki:letmein' | chpasswd
-RUN chown -R loki /home/loki
-RUN echo ". $HOME/bash-env/main" >> /home/loki/.bashrc
-RUN echo ". /packages/anaconda3/etc/profile.d/conda.sh && conda activate base" >> /home/loki/.bashrc
-RUN echo ". $ROOTSYS/bin/thisroot.sh" >> /home/loki/.bashrc
+RUN useradd -ms /bin/bash -g root -G sudo,wheel -u 1000 loki && \
+  echo 'loki:letmein' | chpasswd && \
+  chown -R loki /home/loki && \ 
+  chmod -R a+rw /opt
+#  chown -R loki /opt 
+RUN mkdir -p /data && chmod -R a+rw /data
+
+RUN echo ". /opt/bash-env/main" >> /home/loki/.bashrc && \
+  echo ". $ROOTSYS/bin/thisroot.sh" >> /home/loki/.bashrc && \
+  echo ". /opt/anaconda3/etc/profile.d/conda.sh && conda activate base" >> /home/loki/.bashrc
+
 USER loki
+WORKDIR /home/loki
+EXPOSE 8888
 #ENTRYPOINT ["/bin/bash"]
