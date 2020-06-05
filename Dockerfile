@@ -7,18 +7,19 @@ FROM centos:7
 USER root
 
 ## Environment variables for installation
-ENV CMAKEVER=3.15.2
-ENV BOOSTVER=1.71.0
-ENV BOOST_PATH=/opt/boost1.71
-ENV ROOTVER=6.18.04
-ENV ROOTSYS=/opt/root6.18
+ENV CONDAVER=2020.02
+ENV CONDADIR=/opt/anaconda3
+ENV CMAKEVER=3.17.3
+ENV BOOSTVER=1.73.0
+ENV BOOST_PATH=/opt/boost1.73
+ENV ROOTVER=6.20.04
+ENV ROOTSYS=/opt/root6.20
 
-## Install system level packages
+## Install system packages
 RUN yum -y upgrade && yum install -y \ 
-        sudo wget make git which centos-release-scl patch net-tools binutils \
-        gcc gcc-c++ g++  libcurl-devel libX11-devel \
-        blas-devel libarchive-devel fuse-sshfs jq graphviz dvipng \
-        libXext-devel bazel http-parser nodejs perl-Digest-MD5 perl-ExtUtils-MakeMaker gettext \
+        sudo wget which make git centos-release-scl libcurl-devel patch net-tools \
+        blas-devel libarchive-devel fuse-sshfs jq dvipng \
+        bazel http-parser nodejs perl-Digest-MD5 perl-ExtUtils-MakeMaker gettext \
         # LaTeX tools
         pandoc texlive texlive-collection-xetex texlive-ec texlive-upquote texlive-adjustbox \
         # Data formats
@@ -27,11 +28,20 @@ RUN yum -y upgrade && yum install -y \
         bzip2 unzip lrzip zip zlib-devel \
         # Terminal utilities
         fish tree ack screen tmux vim-enhanced neovim nano pico emacs emacs-nox \
+        # Cern ROOT dependencies
+        binutils gcc gcc-c++ g++ \
+        libcurl-devel libX11-devel libXpm-devel libXft-devel libXext-devel \
+        # Cern ROOT optional dependencies
+        gcc-gfortran openssl-devel pcre-devel \
+        mesa-libGL-devel mesa-libGLU-devel glew-devel ftgl-devel mysql-devel \
+        fftw-devel cfitsio-devel graphviz-devel \
+        avahi-compat-libdns_sd-devel libldap-dev python-devel \
+        libxml2-devel gsl-static \
         && yum clean all
 
 ## Anaconda 3
-RUN wget --quiet https://repo.anaconda.com/archive/Anaconda3-2019.07-Linux-x86_64.sh -O /opt/anaconda.sh && \
-    bash /opt/anaconda.sh -b -p /opt/anaconda3 && \
+RUN wget --quiet https://repo.anaconda.com/archive/Anaconda3-$CONDAVER-Linux-x86_64.sh -O /opt/anaconda.sh && \
+    bash /opt/anaconda.sh -b -p $CONDADIR && \
     rm /opt/anaconda.sh
 RUN ln -s /opt/anaconda3/include/python3.7m /opt/anaconda3/include/python3.7
 
@@ -47,14 +57,6 @@ wget --quiet https://dl.bintray.com/boostorg/release/$BOOSTVER/source/boost_$(ec
 # Create softlink for boost shared objects (for compatibility)
 RUN ln -s $BOOST_PATH/lib/libboost_numpy37.so $BOOST_PATH/lib/libboost_numpy.so && \
         ln -s $BOOST_PATH/lib/libboost_python37.so $BOOST_PATH/lib/libboost_python.so
-
-## Cern ROOT 
-# ROOT Dependencies 
-RUN yum install -y gcc-gfortran openssl-devel pcre-devel \
-	mesa-libGL-devel mesa-libGLU-devel glew-devel ftgl-devel mysql-devel \
-	fftw-devel cfitsio-devel graphviz-devel gsl-static\
-	avahi-compat-libdns_sd-devel libldap-dev python-devel \
-	libxml2-devel libXpm-devel libXft-devel 
 
 # Install cmake v >=3.9 (required to build ROOT 6)
 RUN wget --quiet https://github.com/Kitware/CMake/releases/download/v$CMAKEVER/cmake-$CMAKEVER.tar.gz -O /tmp/cmake.tar.gz && \
